@@ -1,5 +1,5 @@
-const AUTH_KEY = "CHANGE_ME_TO_A_LONG_RANDOM_SECRET";
-const EXIT_RELAY_URL = "https://CHANGE_ME_EXIT_RELAY_URL/relay";
+const AUTH_KEY = "my_secret_123456";
+const EXIT_RELAY_URL = "https://bitter-fog-4e24.m-rezaee3333.workers.dev";
 const EXIT_RELAY_KEY = "";
 
 const SKIP_HEADERS = {
@@ -58,7 +58,6 @@ function doBatch_(items) {
       continue;
     }
     fetches.push({
-      index: i,
       request: {
         url: EXIT_RELAY_URL,
         method: "post",
@@ -71,12 +70,15 @@ function doBatch_(items) {
     });
   }
 
-  const responses = fetches.length ? UrlFetchApp.fetchAll(fetches.map((x) => x.request)) : [];
+  const responses = fetches.length
+    ? UrlFetchApp.fetchAll(fetches.map((x) => x.request))
+    : [];
+
   const results = [];
   let responseIndex = 0;
 
   for (let i = 0; i < items.length; i++) {
-    if (Object.prototype.hasOwnProperty.call(errors, i)) {
+    if (errors[i]) {
       results.push({ e: errors[i] });
       continue;
     }
@@ -85,7 +87,10 @@ function doBatch_(items) {
     try {
       results.push(JSON.parse(resp.getContentText()));
     } catch (err) {
-      results.push({ e: "invalid worker response", raw: resp.getContentText() });
+      results.push({
+        e: "invalid worker response",
+        raw: resp.getContentText(),
+      });
     }
   }
 
@@ -100,14 +105,14 @@ function exitRelayHeaders_() {
 }
 
 function isValidRelayRequest_(req) {
-  return !!req.u && typeof req.u === "string" && !!req.u.match(/^https?:\/\//i);
+  return !!req.u && typeof req.u === "string" && req.u.match(/^https?:\/\//i);
 }
 
 function buildWorkerPayload_(req) {
   const headers = {};
   if (req.h && typeof req.h === "object") {
     for (const key in req.h) {
-      if (Object.prototype.hasOwnProperty.call(req.h, key) && !SKIP_HEADERS[key.toLowerCase()]) {
+      if (!SKIP_HEADERS[key.toLowerCase()]) {
         headers[key] = req.h[key];
       }
     }
@@ -118,13 +123,12 @@ function buildWorkerPayload_(req) {
     m: (req.m || "GET").toUpperCase(),
     h: headers,
     b: req.b || null,
-    ct: req.ct || null,
     r: req.r !== false,
   };
 }
 
 function doGet() {
-  return HtmlService.createHtmlOutput("Relay Active");
+  return ContentService.createTextOutput("Relay Active");
 }
 
 function json_(obj) {
